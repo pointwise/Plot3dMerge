@@ -1,17 +1,11 @@
 Plot3dMerge
 ==========================================
-When this script is run after after importing a structured grid from a 
-PLOT3D file it will recover all the non-full-face interblock connections.
-If the user sets boundary conditions on the grid before running the 
-script, only domains that have to be split to establish the correct 
-block connectivity will be split. Otherwise, the script attempts to split
-all domains.
+When this script is run after after importing a structured grid from a PLOT3D file it will recover all the non-full-face interblock connections.
+
 
 Disclaimer
 ----------
-Scripts are freely provided. They are not supported products of 
-Pointwise, Inc. Some scripts have been written and contributed by 
-third parties outside of Pointwise's control.
+Scripts are freely provided. They are not supported products of Pointwise, Inc. Some scripts have been written and contributed by third parties outside of Pointwise's control.
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, POINTWISE DISCLAIMS
 ALL WARRANTIES, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED
