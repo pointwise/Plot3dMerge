@@ -10,13 +10,33 @@
 package require PWI_Glyph 2
 
 set tol       [pw::Database getSamePointTolerance]
-set verbose   1  ;# set 1 to generate trace/debug output
+set verbose   0  ;# set 1 to generate trace/debug output
 
 
-proc vputs { msg } {
+proc tputs { msg startSecondsVar {deltaSeconds 10} } {
+  if { "" == "$startSecondsVar"} {
+    # message is not time filtered
+    puts $msg
+  } else {
+    upvar $startSecondsVar startSeconds
+    if { 0 == $startSeconds } {
+      # first call, just capture clock
+      set startSeconds [clock seconds]
+    } elseif { ( [clock seconds] - $startSeconds ) >= $deltaSeconds } {
+      set startSeconds [clock seconds]
+      puts $msg
+    }
+  }
+}
+
+
+proc vputs { msg {startSecondsVar {}} {deltaSeconds 10} } {
   global verbose
   if { $verbose } {
-    puts $msg
+    if { "" != "$startSecondsVar"} {
+      upvar $startSecondsVar startSeconds
+    }
+    tputs $msg startSeconds $deltaSeconds
   }
 }
 
@@ -76,7 +96,7 @@ proc getUniqueDomCons { doms } {
 
 
 proc buildEntInteriorNodeMap { entType entsToSplitVar } {
-  vputs "Building $entType interior node map..."
+  puts "Building $entType interior node map..."
   upvar $entsToSplitVar entsToSplit
   # Build a ent:nodes map. Where each ent needs to be split at one or more
   # interior grid point locations that are coincident with each node.
@@ -86,8 +106,13 @@ proc buildEntInteriorNodeMap { entType entsToSplitVar } {
   } else {
     set nodes [getUniqueConNodes [pw::Grid getAll -type pw::Connector]]
   }
+  set cnt 0
+  set startSeconds 0
+  set numNodes [llength $nodes]
   set entsToSplit [dict create]
   foreach node $nodes {
+    incr cnt
+    tputs "> processed $cnt of $numNodes nodes..." startSeconds
     set xyz [$node getXYZ]
     foreach ent $ents {
       if { [getInteriorCoordAtXYZ $ent $xyz coord] } {
@@ -116,7 +141,7 @@ proc splitDomAtIJ { dom IorJ ndx } {
   if { [catch {$dom split -$IorJ $ndx} ret] } {
     set ret $dom
   } else {
-    vputs "> $IorJ $ndx of dim[list [$dom getDimensions]] [$dom getName]"
+    vputs "> split at $IorJ=$ndx of dim[list [$dom getDimensions]]"
   }
   return $ret
 }
@@ -159,7 +184,6 @@ proc splitDomsAtInteriorNodes { } {
   if { [buildDomInteriorNodeMap domsToSplit] } {
     set pass 0
     dict for {dom nodes} $domsToSplit {
-      puts "[incr pass] of [dict size $domsToSplit]..."
       set domName [$dom getName]
       # this does an agressive split of dom
       set allSplitDoms [splitDomAtNodes $dom $nodes]
@@ -167,7 +191,7 @@ proc splitDomsAtInteriorNodes { } {
       # Entity auto-merge has happened by now. Join allSplitDoms back together to
       # eliminate unneeded splits. Then join the dom cons to eliminate unneeded
       # nodes.
-      vputs "cleaning up domains..."
+      vputs "Cleaning up domains..."
       set doms [pw::DomainStructured join -reject rejects $allSplitDoms]
       lappend doms {*}$rejects
       # shorten split dom names
@@ -177,9 +201,9 @@ proc splitDomsAtInteriorNodes { } {
       $cln do setName "$domName-split-1"
       $cln delete
       unset cln
-      vputs "$domName was split into [llength $doms] domains"
+      puts "[incr pass] of [dict size $domsToSplit]: $domName was split into [llength $doms] domains"
 
-      vputs "cleaning up connectors..."
+      vputs "Cleaning up connectors..."
       set cons [getUniqueDomCons $doms]
       pw::Connector join -keepDistribution $cons
 
@@ -207,7 +231,7 @@ proc splitConsAtInteriorNodes { } {
 
 
 proc splitConAtNodes { con nodes } {
-  vputs "Splitting connector '[$con getName]' at [llength $nodes] interior nodes..."
+  puts "Splitting connector '[$con getName]' at [llength $nodes] interior nodes..."
   set iparams [list]
   foreach node $nodes {
     set xyz [$node getXYZ]
