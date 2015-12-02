@@ -313,6 +313,13 @@ proc splitDomsAtConNode { doms con node } {
     set xyz [$con getXYZ 2]
   } elseif { $node == [$con getNode 2] } {
     set xyz [$con getXYZ [$con getCellCount]]
+  } else {
+    set n1 [$con getNode 1]
+    set n2 [$con getNode 2]
+    puts "Could not find node for connector '[$con getName]'"
+    puts "   node at [list [$node getXYZ]]"
+    puts "   connector at [list [$n1 getXYZ]] [list [$n2 getXYZ]]"
+    return
   }
   # get domains that already contain con
   #set conDoms [lsort [pw::Domain getDomainsFromConnectors [list $con]]]
